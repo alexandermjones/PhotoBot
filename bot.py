@@ -40,12 +40,12 @@ class PhotoBot(commands.Bot):
         self.add_events()
 
     
-    async def handle_image(self, image_url):
+    def handle_image(self, image_url):
         '''
         Handle an image URL.
         '''
         # TODO currently just a print to log.
-        print(image_url)
+        print('Received URL: {image_url}.')
 
 
     '''
@@ -66,9 +66,10 @@ class PhotoBot(commands.Bot):
         # Get all image urls in the message
         image_urls = []
         for attachment in message.attachments:
-            if Path(attachment.filename).suffix in self.image_suffixes:
+            if Path(attachment.filename).suffix.lower() in self.image_suffixes:
                 image_urls.append(attachment.url)
-        
+    
+        # Handle these URLs
         for image_url in image_urls:
             self.handle_image(image_url)
 
