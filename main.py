@@ -23,7 +23,7 @@ if __name__ == '__main__':
         raise EnvironmentError('No token found for the Discord bot in the .env file. Please see the readme for details.')
 
     try:
-        assert photo_url is not None:
+        assert photo_url is not None
     except AssertionError:
         raise EnvironmentError('No token found for the photo endpoint in the .env file. Please see the readme for details.')
 
