@@ -14,13 +14,19 @@ from bot import PhotoBot
 if __name__ == '__main__':
     # Load in Discord token.
     load_dotenv()
-    TOKEN = getenv('DISCORD_TOKEN')
+    token = getenv('DISCORD_TOKEN')
+    photo_url = getenv('PHOTO_ENDPOINT')
 
     try:
-        assert TOKEN is not None
+        assert token is not None
     except AssertionError:
         raise EnvironmentError('No token found for the Discord bot in the .env file. Please see the readme for details.')
 
+    try:
+        assert photo_url is not None:
+    except AssertionError:
+        raise EnvironmentError('No token found for the photo endpoint in the .env file. Please see the readme for details.')
+
     # Create bot and run.
-    bot = PhotoBot(command_prefix='!')
-    bot.run(TOKEN)
+    bot = PhotoBot(photo_url, command_prefix='!')
+    bot.run(token)
