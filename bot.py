@@ -3,7 +3,7 @@ Class for PhotoBot, which handles photo retrieving and sending from Discord.
 """
 
 # Standard library imports.
-import json
+import requests
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +26,7 @@ class PhotoBot(commands.Bot):
         
     """
     def __init__(self,
+                 photo_url: str,
                  command_prefix: str='!'):
         """
         Initialises the Queue_Bot.
@@ -35,6 +36,7 @@ class PhotoBot(commands.Bot):
         super().__init__(command_prefix=command_prefix,
                          intents=INTENTS,
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
+        self.photo_url = photo_url
         self.command_prefix = command_prefix
         self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png', '.gif']
         self.add_events()
@@ -44,8 +46,8 @@ class PhotoBot(commands.Bot):
         '''
         Handle an image URL.
         '''
-        # TODO currently just a print to log.
-        print('Received URL: {image_url}.')
+        r = requests.post(url=self.photo_url, data={'photo': image_url})
+        print(r)
 
 
     '''
