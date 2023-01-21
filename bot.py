@@ -46,7 +46,7 @@ class PhotoBot(commands.Bot):
         '''
         Handle an image URL.
         '''
-        r = requests.post(url=self.photo_url, data={'photo': image_url})
+        r = requests.post(url=self.photo_url, data=image_url)
         print(r)
 
 
