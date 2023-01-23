@@ -3,17 +3,24 @@ Class for PhotoBot, which handles photo retrieving and sending from Discord.
 '''
 
 # Standard library imports.
+import logging
 import requests
 from pathlib import Path
 from typing import Any
 
 # Third party imports.
-from discord import Intents
+import discord
 from discord.ext import commands
 
 # Add the message_content intent to manage Attachments
-INTENTS = Intents.default()
+INTENTS = discord.Intents.default()
 INTENTS.message_content = True
+
+# Set the logging level and write to file
+logging.basicConfig(filename='bot.log',
+                    filemode='w',
+                    format='%(levelname)s - %(asctime)s - %(message)s', 
+                    level=logging.INFO)
 
 
 class PhotoBot(commands.Bot):
@@ -51,7 +58,7 @@ class PhotoBot(commands.Bot):
         self.add_events()
 
     
-    def handle_image(self, image_url: str) -> None:
+    def handle_image(self, image_url: str, channel_name: str) -> None:
         '''
         Send a URL of an image to self.db_url.
 
@@ -59,17 +66,20 @@ class PhotoBot(commands.Bot):
             image_url (str): The URL of the image to send to self.db_url.
         '''
         r = requests.post(url=self.photo_url, data=image_url)
-        print(r)
+        if r.status_code == 200:
+            logging.info(f'Image URL of {image_url} succesfully posted to database.')
+        else:
+            logging.error(f'Error uploading image URL: {image_url}. The server responded: {r.reason} with status code {r.status_code}.')
 
 
     '''
     Behaviour for events happening to the bot.
     '''
-    async def __on_message(self, message) -> None:
+    async def __on_message(self, message: discord.Message) -> None:
         '''
         Handle functionality for when a message is posted in a channel.
 
-        Sends all image attachments to self.handle_image.
+        Sends all image attachments to self.handle_image and then reacts to the message with a camera emoji.
 
         Args:
             message: A Discord message event.
@@ -82,6 +92,8 @@ class PhotoBot(commands.Bot):
         if not message.attachments:
             return
 
+        channel_name = message.channel.name
+
         # Get all image urls in the message
         image_urls = []
         for attachment in message.attachments:
@@ -90,7 +102,11 @@ class PhotoBot(commands.Bot):
     
         # Handle these URLs
         for image_url in image_urls:
-            self.handle_image(image_url)
+            self.handle_image(image_url, channel_name)
+        
+        # React to the message if it contained an image with a camera with flash emoji
+        if image_urls:
+            await message.add_reaction('📸')
 
 
     async def __on_command_error(self, ctx: commands.Context, error: Any) -> None:
