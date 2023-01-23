@@ -12,10 +12,10 @@ from bot import PhotoBot
 
 
 if __name__ == '__main__':
-    # Load in Discord token.
+    # Load in Discord token and db_url.
     load_dotenv()
     token = getenv('DISCORD_TOKEN')
-    photo_url = getenv('PHOTO_ENDPOINT')
+    db_url = getenv('DB_ENDPOINT')
 
     try:
         assert token is not None
@@ -23,10 +23,10 @@ if __name__ == '__main__':
         raise EnvironmentError('No token found for the Discord bot in the .env file. Please see the readme for details.')
 
     try:
-        assert photo_url is not None
+        assert db_url is not None
     except AssertionError:
-        raise EnvironmentError('No token found for the photo endpoint in the .env file. Please see the readme for details.')
+        raise EnvironmentError('No token found for the DB endpoint in the .env file. Please see the readme for details.')
 
     # Create bot and run.
-    bot = PhotoBot(photo_url, command_prefix='!')
+    bot = PhotoBot(db_url, command_prefix='!')
     bot.run(token)
