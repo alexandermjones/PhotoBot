@@ -24,7 +24,7 @@ Create a file named `.env` in the root of this repository and then add environme
 
 ```javascript
 DISCORD_TOKEN={my-discord-token}
-DB_URL={my-db-url}
+DB_ENDPOINT={my-db-url}
 ```
 
 ## Usage
