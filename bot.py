@@ -1,6 +1,6 @@
-"""
+'''
 Class for PhotoBot, which handles photo retrieving and sending from Discord.
-"""
+'''
 
 # Standard library imports.
 import requests
@@ -17,34 +17,46 @@ INTENTS.message_content = True
 
 
 class PhotoBot(commands.Bot):
-    """
+    '''
     Class for a Photo Discord Bot.
     
-    Inherits from a Discord bot with commands for handling photo and video upload.
+    Inherits from a Discord bot with additional events.
+
+    The main functionality of the Bot is that it sends the URLs of images uploaded in the channel to self.db_url.
 
     Non-inherited public attributes:
-        
-    """
+        db_url (str): The URL to the database where URLs of photos are stored.
+        image_suffixes (list): The suffixes for attachments which are sent to the database.
+    
+    Non-inherited public methods:
+        handle_image: Send a URL of an image to self.db_url.
+        add_events: Add the new events to the bot.
+    '''
     def __init__(self,
-                 photo_url: str,
+                 db_url: str,
                  command_prefix: str='!'):
-        """
+        '''
         Initialises the Queue_Bot.
+
         Args:
+            db_url (str): The URL to the database where photos are stored.
             command_prefix (str, default='!'): The character which identifies a message as a command.
-        """
+        '''
         super().__init__(command_prefix=command_prefix,
                          intents=INTENTS,
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
-        self.photo_url = photo_url
+        self.db_url = db_url
         self.command_prefix = command_prefix
-        self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png', '.gif']
+        self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png']
         self.add_events()
 
     
-    def handle_image(self, image_url):
+    def handle_image(self, image_url: str) -> None:
         '''
-        Handle an image URL.
+        Send a URL of an image to self.db_url.
+
+        Args:
+            image_url (str): The URL of the image to send to self.db_url.
         '''
         r = requests.post(url=self.photo_url, data=image_url)
         print(r)
@@ -53,9 +65,14 @@ class PhotoBot(commands.Bot):
     '''
     Behaviour for events happening to the bot.
     '''
-    async def on_message(self, message):
+    async def __on_message(self, message) -> None:
         '''
-        Get all the URLs for images sent in the channel and send these to self.handle_image().
+        Handle functionality for when a message is posted in a channel.
+
+        Sends all image attachments to self.handle_image.
+
+        Args:
+            message: A Discord message event.
         '''
         # Ignore if the Bot is the messager, so we don't enter into a recursive loop
         if message.author == self.user:
@@ -76,37 +93,35 @@ class PhotoBot(commands.Bot):
             self.handle_image(image_url)
 
 
-    async def on_command_error(self, ctx: commands.Context, error: Any) -> str:
+    async def __on_command_error(self, ctx: commands.Context, error: Any) -> None:
         '''
-        Error handling for errors with a command.
+        Handle functionality for when an error occurs - sends a relevant message to the channel.
 
         Args:
             ctx (commands.Context): The context of the command.
             error (Any): A commands error.
-        Returns:
-            str: The response message to post in the Discord channel the error was received in.
         '''
         if isinstance(error, commands.CommandNotFound):
-            await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
+            await ctx.send('**Invalid command. Try using** `help` **to figure out commands!**')
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('**Please pass in all requirements to use the command. Try using** `help`**!**')
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
+            await ctx.send('**You dont have all the requirements or permissions for using this command :angry:**')
         if isinstance(error, commands.errors.CommandInvokeError):
-            await ctx.send("**There was a connection error somewhere, why don't you try again now?**")
+            await ctx.send('**There was a connection error somewhere, why don\'t you try again now?**')
 
 
-    async def on_ready(self) -> None:
+    async def __on_ready(self) -> None:
         '''
-        Message to print in the terminal when the bot is created to confirm its ready.
+        Print message to confirm the PhotoBot has been succesfully created.
         '''
-        print(f'Bot created as: {self.user.name}.')
+        print(f'PhotoBot created as: {self.user.name}.')
 
 
     def add_events(self) -> None:
         '''
         Add the new events to the bot.
         '''
-        self.on_message = self.event(self.on_message)
-        self.on_command_error = self.event(self.on_command_error)
-        self.on_ready = self.event(self.on_ready)
+        self.__on_message = self.event(self.__on_message)
+        self.__on_command_error = self.event(self.__on_command_error)
+        self.__on_ready = self.event(self.__on_ready)
