@@ -75,7 +75,7 @@ class PhotoBot(commands.Bot):
     '''
     Behaviour for events happening to the bot.
     '''
-    async def __on_message(self, message: discord.Message) -> None:
+    async def on_message(self, message: discord.Message) -> None:
         '''
         Handle functionality for when a message is posted in a channel.
 
@@ -109,7 +109,7 @@ class PhotoBot(commands.Bot):
             await message.add_reaction('📸')
 
 
-    async def __on_command_error(self, ctx: commands.Context, error: Any) -> None:
+    async def on_command_error(self, ctx: commands.Context, error: Any) -> None:
         '''
         Handle functionality for when an error occurs - sends a relevant message to the channel.
 
@@ -127,7 +127,7 @@ class PhotoBot(commands.Bot):
             await ctx.send('**There was a connection error somewhere, why don\'t you try again now?**')
 
 
-    async def __on_ready(self) -> None:
+    async def on_ready(self) -> None:
         '''
         Print message to confirm the PhotoBot has been succesfully created.
         '''
@@ -138,6 +138,6 @@ class PhotoBot(commands.Bot):
         '''
         Add the new events to the bot.
         '''
-        self.__on_message = self.event(self.__on_message)
-        self.__on_command_error = self.event(self.__on_command_error)
-        self.__on_ready = self.event(self.__on_ready)
+        self.on_message = self.event(self.on_message)
+        self.on_command_error = self.event(self.on_command_error)
+        self.on_ready = self.event(self.on_ready)
