@@ -65,7 +65,7 @@ class PhotoBot(commands.Bot):
         Args:
             image_url (str): The URL of the image to send to self.db_url.
         '''
-        r = requests.post(url=self.photo_url, data=image_url)
+        r = requests.post(url=self.db_url, data=image_url)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
         else:

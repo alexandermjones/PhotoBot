@@ -1,6 +1,6 @@
-"""
+'''
 Run the Discord bot.
-"""
+'''
 # Standard imports
 from os import getenv
 
