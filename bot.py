@@ -58,7 +58,7 @@ class PhotoBot(commands.Bot):
         self.add_events()
 
     
-    def handle_image(self, image_url: str, channel_name: str) -> None:
+    def handle_image(self, image_url: str, channel_id: str) -> None:
         '''
         Send a URL of an image to self.db_url.
 
@@ -70,7 +70,7 @@ class PhotoBot(commands.Bot):
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
         else:
             logging.error(f'Error uploading image URL: {image_url}. The server responded: {r.reason} with status code {r.status_code}.')
-
+        
 
     '''
     Behaviour for events happening to the bot.
@@ -92,7 +92,7 @@ class PhotoBot(commands.Bot):
         if not message.attachments:
             return
 
-        channel_name = message.channel.name
+        channel_id = message.channel.id
 
         # Get all image urls in the message
         image_urls = []
@@ -102,7 +102,7 @@ class PhotoBot(commands.Bot):
     
         # Handle these URLs
         for image_url in image_urls:
-            self.handle_image(image_url, channel_name)
+            self.handle_image(image_url, channel_id)
         
         # React to the message if it contained an image with a camera with flash emoji
         if image_urls:
@@ -141,3 +141,30 @@ class PhotoBot(commands.Bot):
         self.on_message = self.event(self.on_message)
         self.on_command_error = self.event(self.on_command_error)
         self.on_ready = self.event(self.on_ready)
+    
+
+    '''
+    Commands for the bot.
+    '''
+    @commands.command(name='album', 
+                      help='Name the album for photos in the channel.')
+    async def name_album(self, ctx: commands.Context, album_name: str) -> None:
+        '''
+        Command to name the album for a given channel, starts an album if not currently in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+            album_name (str): The name of the album.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        '''
+        channel_id = ctx.channel.id
+        album_name = album_name.title()
+        post_data = {'channel_id': channel_id, 'album': album_name}
+        r = requests.post(url=self.db_url, data=post_data)
+        if r.status_code == 200:
+            logging.info(f'Success')
+        else:
+            logging.error(f'Error. The server responded: {r.reason} with status code {r.status_code}.')
+        await ctx.message.add_reaction('👌')
