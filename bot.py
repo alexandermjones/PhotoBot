@@ -3,6 +3,7 @@ Class for PhotoBot, which handles photo retrieving and sending from Discord.
 '''
 
 # Standard library imports.
+import json
 import logging
 import requests
 from pathlib import Path
@@ -52,25 +53,56 @@ class PhotoBot(commands.Bot):
         super().__init__(command_prefix=command_prefix,
                          intents=INTENTS,
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
-        self.db_url = db_url
+        self.photo_url = db_url.replace('SUBDOMAIN', 'photo')
+        self.album_url = db_url.replace('SUBDOMAIN', 'album')
         self.command_prefix = command_prefix
         self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png']
+        self.channels_path = Path('channels.json')
+        if not self.channels_path.is_file():
+            self.channels_path.touch('w')
+        with open(self.channels_path, 'r') as f:
+            self.channels = json.loads(f)
         self.add_events()
 
     
-    def handle_image(self, image_url: str, channel_id: str) -> None:
+    def handle_image(self, image_url: str, channel_id: str) -> bool:
         '''
-        Send a URL of an image to self.db_url.
+        Post a URL of an image and channel_id the image was sent in to self.db_url.
 
         Args:
-            image_url (str): The URL of the image to send to self.db_url.
+            image_url (str): The URL of the image to post to self.db_url.
+            channel_id (str): The ID of the channel the image was sent in.
+
+        Returns:
+            bool: True if succesfully posted, False is not.
         '''
-        r = requests.post(url=self.db_url, data=image_url)
+        post_data = {'url': image_url, 'channelId': channel_id}
+        r = requests.post(url=self.photo_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
+            return True
         else:
             logging.error(f'Error uploading image URL: {image_url}. The server responded: {r.reason} with status code {r.status_code}.')
+            return False
         
+
+    def update_channel_name(self, channel_id: str, album_name: str) -> bool:
+        '''
+        Send an updated album name for the given channel_id.
+
+        Args:
+            channel_id (str): The ID of the channel the image was sent in.
+            album_name (str): The album name to POST.
+        '''
+        post_data = {'channelId': channel_id, 'name': album_name}
+        r = requests.post(url=self.album_url, data=post_data)
+        if r.status_code == 200:
+            logging.info(f'Successfully updated {channel_id} with album name: {album_name}.')
+            return True
+        else:
+            logging.error(f'Error updating {channel_id} name. The server responded: {r.reason} with status code {r.status_code}.')
+            return False
+
 
     '''
     Behaviour for events happening to the bot.
@@ -101,11 +133,12 @@ class PhotoBot(commands.Bot):
                 image_urls.append(attachment.url)
     
         # Handle these URLs
+        successes = []
         for image_url in image_urls:
-            self.handle_image(image_url, channel_id)
+            successes.append(self.handle_image(image_url, channel_id))
         
         # React to the message if it contained an image with a camera with flash emoji
-        if image_urls:
+        if any(successes):
             await message.add_reaction('📸')
 
 
@@ -161,10 +194,7 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = ctx.channel.id
         album_name = album_name.title()
-        post_data = {'channel_id': channel_id, 'album': album_name}
-        r = requests.post(url=self.db_url, data=post_data)
-        if r.status_code == 200:
-            logging.info(f'Success')
-        else:
-            logging.error(f'Error. The server responded: {r.reason} with status code {r.status_code}.')
-        await ctx.message.add_reaction('👌')
+        success = self.update_channel_name(channel_id, album_name)
+        if success:
+            ctx.message.add_reaction('👌')
+
