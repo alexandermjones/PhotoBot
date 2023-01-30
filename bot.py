@@ -202,8 +202,8 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot.
     '''
-    @discord.app_commands.CommandTree.command(name='album', 
-                                              description='Name the album for photos in the channel.')
+    @commands.hybrid_command(name='album',
+                             description='Name the album for photos in the channel.')
     async def name_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
@@ -219,8 +219,8 @@ class PhotoBot(commands.Bot):
             ctx.message.add_reaction('👌')
     
 
-    @discord.app_commands.CommandTree.command(name='capture',
-                                              description='Capture photos uploaded in the channel.')
+    @commands.hybrid_command(name='capture',
+                             description='Capture photos uploaded in the channel.')
     async def capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to capture photos uploaded in the channel.
@@ -233,8 +233,8 @@ class PhotoBot(commands.Bot):
         ctx.message.add_reaction('👍')
     
 
-    @discord.app_commands.CommandTree.command(name='stop',
-                                              description='Stop capturing photos uploaded in the channel.')
+    @commands.hybrid_command(name='stop',
+                              description='Stop capturing photos uploaded in the channel.')
     async def stop_capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to stop capturing photos uploaded in the channel.
