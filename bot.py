@@ -40,7 +40,7 @@ class PhotoBot(commands.Bot):
         handle_image: Send a URL of an image to self.db_url.
         add_events: Add the new events to the bot.
     '''
-    async def __init__(self,
+    def __init__(self,
                  db_url: str,
                  command_prefix: str='!'):
         '''
@@ -64,7 +64,6 @@ class PhotoBot(commands.Bot):
             with open(self.channels_path, 'r') as f:
                 self.channels = json.loads(f)
         self.add_events()
-        await self.add_commands()
 
     
     def handle_image(self, image_url: str, channel_id: str) -> bool:
@@ -185,9 +184,10 @@ class PhotoBot(commands.Bot):
 
     async def on_ready(self) -> None:
         '''
-        Print message to confirm the PhotoBot has been succesfully created.
+        Print message to confirm the PhotoBot has been created, then sync commands.
         '''
         print(f'PhotoBot created as: {self.user.name}.')
+        await self.add_commands()
 
 
     def add_events(self) -> None:
