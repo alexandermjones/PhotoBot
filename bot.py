@@ -63,7 +63,6 @@ class PhotoBot(commands.Bot):
         else:
             with open(self.channels_path, 'r') as f:
                 self.channels = json.loads(f)
-        self.commandtree = discord.app_commands.CommandTree(self)
         self.add_events()
         self.add_commands()
 
@@ -251,5 +250,5 @@ class PhotoBot(commands.Bot):
         self.add_command(self.name_album)
         self.add_command(self.capture_album)
         self.add_command(self.stop_capture_album)
-        self.commandtree.sync()
+        self.tree.sync()
         return
