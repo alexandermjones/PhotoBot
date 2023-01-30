@@ -202,8 +202,6 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot.
     '''
-    @commands.hybrid_command(name='album',
-                             description='Name the album for photos in the channel.')
     async def name_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
@@ -219,8 +217,6 @@ class PhotoBot(commands.Bot):
             ctx.message.add_reaction('👌')
     
 
-    @commands.hybrid_command(name='capture',
-                             description='Capture photos uploaded in the channel.')
     async def capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to capture photos uploaded in the channel.
@@ -231,10 +227,8 @@ class PhotoBot(commands.Bot):
         channel_id = ctx.channel.id
         self.update_channel(channel_id, True)
         ctx.message.add_reaction('👍')
-    
 
-    @commands.hybrid_command(name='stop',
-                              description='Stop capturing photos uploaded in the channel.')
+
     async def stop_capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to stop capturing photos uploaded in the channel.
@@ -245,10 +239,10 @@ class PhotoBot(commands.Bot):
         channel_id = ctx.channel.id
         self.update_channel(channel_id, False)
         ctx.message.add_reaction('👍')
-    
+
 
     async def add_commands(self) -> None:
-        self.add_command(self.name_album)
-        self.add_command(self.capture_album)
-        self.add_command(self.stop_capture_album)
+        self.name_album = self.hybrid_command(self.name_album, name='album', description='Name the album for photos in the channel.')
+        self.capture_album = self.hybrid_command(self.capture_album, name='capture', description='Capture photos uploaded in the channel.')
+        self.stop_capture_album = self.hybrid_command(self.stop_capture_album, name='stop', description='Stop capturing photos uploaded in the channel.')
         await self.tree.sync()
