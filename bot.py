@@ -63,6 +63,7 @@ class PhotoBot(commands.Bot):
         else:
             with open(self.channels_path, 'r') as f:
                 self.channels = json.loads(f)
+        self.commandtree = discord.app_commands.CommandTree()
         self.add_events()
         self.add_commands()
 
@@ -201,8 +202,8 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot.
     '''
-    @commands.command(name='album', 
-                      help='Name the album for photos in the channel.')
+    @discord.app_commands.CommandTree.command(name='album', 
+                                              description='Name the album for photos in the channel.')
     async def name_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
@@ -218,8 +219,8 @@ class PhotoBot(commands.Bot):
             ctx.message.add_reaction('👌')
     
 
-    @commands.command(name='capture',
-                      help='Capture photos uploaded in the channel.')
+    @discord.app_commands.CommandTree.command(name='capture',
+                                              description='Capture photos uploaded in the channel.')
     async def capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to capture photos uploaded in the channel.
@@ -232,8 +233,8 @@ class PhotoBot(commands.Bot):
         ctx.message.add_reaction('👍')
     
 
-    @commands.command(name='stop',
-                      help='Stop capturing photos uploaded in the channel.')
+    @discord.app_commands.CommandTree.command(name='stop',
+                                              description='Stop capturing photos uploaded in the channel.')
     async def stop_capture_album(self, ctx: commands.Context):
         '''
         Command to tell the bot to stop capturing photos uploaded in the channel.
@@ -250,4 +251,5 @@ class PhotoBot(commands.Bot):
         self.add_command(self.name_album)
         self.add_command(self.capture_album)
         self.add_command(self.stop_capture_album)
+        self.commandtree.sync()
         return
