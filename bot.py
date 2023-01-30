@@ -120,6 +120,7 @@ class PhotoBot(commands.Bot):
         self.channels[channel_id] = capture
         with open(self.channels_path, 'w') as f:
             json.dump(self.channels, f)
+        logging.info(f'Channel ID: {channel_id} now has capture status: {bool}.')
         return
 
 
@@ -246,9 +247,8 @@ class PhotoBot(commands.Bot):
         ctx.message.add_reaction('👍')
     
 
-    def add_commands(self) -> None:
+    async def add_commands(self) -> None:
         self.add_command(self.name_album)
         self.add_command(self.capture_album)
         self.add_command(self.stop_capture_album)
-        self.tree.sync()
-        return
+        await self.tree.sync()
