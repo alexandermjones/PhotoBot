@@ -59,10 +59,12 @@ class PhotoBot(commands.Bot):
         self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png']
         self.channels_path = Path('channels.json')
         if not self.channels_path.is_file():
-            self.channels_path.touch('w')
-        with open(self.channels_path, 'r') as f:
-            self.channels = json.loads(f)
+            self.channels = {}
+        else:
+            with open(self.channels_path, 'r') as f:
+                self.channels = json.loads(f)
         self.add_events()
+        self.add_commands()
 
     
     def handle_image(self, image_url: str, channel_id: str) -> bool:
@@ -74,7 +76,7 @@ class PhotoBot(commands.Bot):
             channel_id (str): The ID of the channel the image was sent in.
 
         Returns:
-            bool: True if succesfully posted, False is not.
+            bool: True if succesfully posted, False if not.
         '''
         post_data = {'url': image_url, 'channelId': channel_id}
         r = requests.post(url=self.photo_url, data=post_data)
@@ -93,6 +95,9 @@ class PhotoBot(commands.Bot):
         Args:
             channel_id (str): The ID of the channel the image was sent in.
             album_name (str): The album name to POST.
+
+        Returns:
+            bool: True if succesfully posted, False if not.
         '''
         post_data = {'channelId': channel_id, 'name': album_name}
         r = requests.post(url=self.album_url, data=post_data)
@@ -102,6 +107,20 @@ class PhotoBot(commands.Bot):
         else:
             logging.error(f'Error updating {channel_id} name. The server responded: {r.reason} with status code {r.status_code}.')
             return False
+    
+
+    def update_channel(self, channel_id: str, capture: bool) -> None:
+        '''
+        Update self.channels and the file at self.channels_path to add or remove it from the channels to post in.
+
+        Args:
+            channel_id (str): The channel ID to update.
+            capture (bool): Whether to capture the channel or not.
+        '''
+        self.channels[channel_id] = capture
+        with open(self.channels_path, 'w') as f:
+            json.dump(self.channels, f)
+        return
 
 
     '''
@@ -120,11 +139,14 @@ class PhotoBot(commands.Bot):
         if message.author == self.user:
             return
 
+        channel_id = message.channel.id
+        # Exit if we aren't capturing in this channel
+        if not self.channels.get(channel_id, False):
+            return
+
         # Exit if the message didn't contain an attachment
         if not message.attachments:
             return
-
-        channel_id = message.channel.id
 
         # Get all image urls in the message
         image_urls = []
@@ -188,13 +210,44 @@ class PhotoBot(commands.Bot):
         Args:
             ctx (commands.Context): The context of the command.
             album_name (str): The name of the album.
-
-        Returns:
-            str: The response message to post in the Discord channel the command was sent in.
         '''
         channel_id = ctx.channel.id
         album_name = album_name.title()
         success = self.update_channel_name(channel_id, album_name)
         if success:
             ctx.message.add_reaction('👌')
+    
 
+    @commands.command(name='capture',
+                      help='Capture photos uploaded in the channel.')
+    async def capture_album(self, ctx: commands.Context):
+        '''
+        Command to tell the bot to capture photos uploaded in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        channel_id = ctx.channel.id
+        self.update_channel(channel_id, True)
+        ctx.message.add_reaction('👍')
+    
+
+    @commands.command(name='stop',
+                      help='Stop capturing photos uploaded in the channel.')
+    async def stop_capture_album(self, ctx: commands.Context):
+        '''
+        Command to tell the bot to stop capturing photos uploaded in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        channel_id = ctx.channel.id
+        self.update_channel(channel_id, False)
+        ctx.message.add_reaction('👍')
+    
+
+    def add_commands(self) -> None:
+        self.add_command(self.name_album)
+        self.add_command(self.capture_album)
+        self.add_command(self.stop_capture_album)
+        return
