@@ -63,7 +63,7 @@ class PhotoBot(commands.Bot):
             self.channels = {}
         else:
             with open(self.channels_path, 'r') as f:
-                self.channels = json.loads(f)
+                self.channels = json.load(f)
         self.add_events()
 
     
@@ -159,7 +159,7 @@ class PhotoBot(commands.Bot):
         
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
-            message.add_reaction('📸')
+            await message.add_reaction('📸')
         
         await self.process_commands(message)
 
@@ -187,7 +187,6 @@ class PhotoBot(commands.Bot):
         Print message to confirm the PhotoBot has been created, then sync commands.
         '''
         print(f'PhotoBot created as: {self.user.name}.')
-        #await self.add_commands()
 
 
     def add_events(self) -> None:
@@ -248,6 +247,6 @@ class PhotoBot(commands.Bot):
         Args:
             ctx (commands.Context): The context of the command.
         '''
-        if ctx.author.id == self.owner_id:
-            ctx.message.add_reaction('👌')
+        if await self.is_owner(ctx.author):
             await self.tree.sync()
+            await ctx.message.add_reaction('👌')
