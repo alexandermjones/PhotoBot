@@ -11,6 +11,7 @@ from typing import Any
 
 # Third party imports.
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 # Add the message_content intent to manage Attachments
@@ -119,7 +120,7 @@ class PhotoBot(commands.Bot):
         self.channels[channel_id] = capture
         with open(self.channels_path, 'w') as f:
             json.dump(self.channels, f)
-        logging.info(f'Channel ID: {channel_id} now has capture status: {bool}.')
+        logging.info(f'Channel ID: {channel_id} now has capture status: {capture}.')
         return
 
 
@@ -140,12 +141,9 @@ class PhotoBot(commands.Bot):
             return
 
         channel_id = message.channel.id
-        # Exit if we aren't capturing in this channel
-        if not self.channels.get(channel_id, False):
-            return
-
-        # Exit if the message didn't contain an attachment
-        if not message.attachments:
+        # Exit if we aren't capturing in this channel or the message didn't contain an attachment
+        if not self.channels.get(channel_id, False) or not message.attachments:
+            await self.process_commands(message)
             return
 
         # Get all image urls in the message
@@ -161,7 +159,9 @@ class PhotoBot(commands.Bot):
         
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
-            await message.add_reaction('📸')
+            message.add_reaction('📸')
+        
+        await self.process_commands(message)
 
 
     async def on_command_error(self, ctx: commands.Context, error: Any) -> None:
@@ -187,7 +187,7 @@ class PhotoBot(commands.Bot):
         Print message to confirm the PhotoBot has been created, then sync commands.
         '''
         print(f'PhotoBot created as: {self.user.name}.')
-        await self.add_commands()
+        #await self.add_commands()
 
 
     def add_events(self) -> None:
@@ -200,7 +200,7 @@ class PhotoBot(commands.Bot):
     
 
     '''
-    Commands for the bot.
+    Commands for the bot. Added using a decorator in main.
     '''
     async def name_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
@@ -213,9 +213,9 @@ class PhotoBot(commands.Bot):
         channel_id = ctx.channel.id
         album_name = album_name.title()
         success = self.update_channel_name(channel_id, album_name)
-        if success:
-            ctx.message.add_reaction('👌')
-    
+        response = '👌' if success else '👎'
+        await ctx.message.add_reaction(response)
+
 
     async def capture_album(self, ctx: commands.Context):
         '''
@@ -226,7 +226,7 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = ctx.channel.id
         self.update_channel(channel_id, True)
-        ctx.message.add_reaction('👍')
+        await ctx.message.add_reaction('👍')
 
 
     async def stop_capture_album(self, ctx: commands.Context):
@@ -238,11 +238,16 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = ctx.channel.id
         self.update_channel(channel_id, False)
-        ctx.message.add_reaction('👍')
+        await ctx.message.add_reaction('👍')
+    
 
+    async def sync_command_tree(self, ctx: commands.Context):
+        '''
+        Command to sync the command tree for the bot, to set commands as slash commands.
 
-    async def add_commands(self) -> None:
-        self.name_album = self.hybrid_command(self.name_album, name='album', description='Name the album for photos in the channel.')
-        self.capture_album = self.hybrid_command(self.capture_album, name='capture', description='Capture photos uploaded in the channel.')
-        self.stop_capture_album = self.hybrid_command(self.stop_capture_album, name='stop', description='Stop capturing photos uploaded in the channel.')
-        await self.tree.sync()
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        if ctx.author.id == self.owner_id:
+            ctx.message.add_reaction('👌')
+            await self.tree.sync()
