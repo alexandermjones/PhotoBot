@@ -86,7 +86,7 @@ class PhotoBot(commands.Bot):
         else:
             logging.error(f'Error uploading image URL: {image_url}. The server responded: {r.reason} with status code {r.status_code}.')
             return False
-        
+
 
     def update_channel_name(self, channel_id: str, album_name: str) -> bool:
         '''
@@ -107,7 +107,7 @@ class PhotoBot(commands.Bot):
         else:
             logging.error(f'Error updating {channel_id} name. The server responded: {r.reason} with status code {r.status_code}.')
             return False
-    
+
 
     def update_channel(self, channel_id: str, capture: bool) -> None:
         '''
@@ -151,12 +151,12 @@ class PhotoBot(commands.Bot):
         for attachment in message.attachments:
             if Path(attachment.filename).suffix.lower() in self.image_suffixes:
                 image_urls.append(attachment.url)
-    
+
         # Handle these URLs
         successes = []
         for image_url in image_urls:
             successes.append(self.handle_image(image_url, channel_id))
-        
+
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
             await message.add_reaction('📸')
@@ -196,7 +196,7 @@ class PhotoBot(commands.Bot):
         self.on_message = self.event(self.on_message)
         self.on_command_error = self.event(self.on_command_error)
         self.on_ready = self.event(self.on_ready)
-    
+
 
     '''
     Commands for the bot. Added using a decorator in main.
@@ -212,8 +212,10 @@ class PhotoBot(commands.Bot):
         channel_id = ctx.channel.id
         album_name = album_name.title()
         success = self.update_channel_name(channel_id, album_name)
-        response = '👌' if success else '👎'
-        await ctx.message.add_reaction(response)
+        if success:
+            await ctx.send(f'Album renamed to {album_name}.')
+        else:
+            await ctx.send('Error renaming album. Please check the logs for details.')
 
 
     async def capture_album(self, ctx: commands.Context):
@@ -225,7 +227,7 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = ctx.channel.id
         self.update_channel(channel_id, True)
-        await ctx.message.add_reaction('👍')
+        await ctx.send('All photos uploaded in this channel will be captured.')
 
 
     async def stop_capture_album(self, ctx: commands.Context):
@@ -237,8 +239,8 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = ctx.channel.id
         self.update_channel(channel_id, False)
-        await ctx.message.add_reaction('👍')
-    
+        await ctx.send('Photos no longer being captured in this channel.')
+
 
     async def sync_command_tree(self, ctx: commands.Context):
         '''
@@ -249,4 +251,4 @@ class PhotoBot(commands.Bot):
         '''
         if await self.is_owner(ctx.author):
             await self.tree.sync()
-            await ctx.message.add_reaction('👌')
+            await ctx.send('Command tree synced 👌.')
