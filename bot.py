@@ -140,7 +140,7 @@ class PhotoBot(commands.Bot):
         if message.author == self.user:
             return
 
-        channel_id = message.channel.id
+        channel_id = str(message.channel.id)
         # Exit if we aren't capturing in this channel or the message didn't contain an attachment
         if not self.channels.get(channel_id, False) or not message.attachments:
             await self.process_commands(message)
