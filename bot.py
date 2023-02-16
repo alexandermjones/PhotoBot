@@ -78,7 +78,7 @@ class PhotoBot(commands.Bot):
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = {'url': image_url, 'channelId': channel_id}
+        post_data = json.dumps({'url': image_url, 'channelId': channel_id})
         r = requests.post(url=self.photo_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
@@ -99,7 +99,7 @@ class PhotoBot(commands.Bot):
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = {'channelId': channel_id, 'name': album_name}
+        post_data = json.dumps({'channelId': channel_id, 'name': album_name})
         r = requests.post(url=self.album_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Successfully updated {channel_id} with album name: {album_name}.')
@@ -209,11 +209,11 @@ class PhotoBot(commands.Bot):
             ctx (commands.Context): The context of the command.
             album_name (str): The name of the album.
         '''
-        channel_id = ctx.channel.id
+        channel_id = str(ctx.channel.id)
         album_name = album_name.title()
         success = self.update_channel_name(channel_id, album_name)
         if success:
-            await ctx.send(f'Album renamed to {album_name}.')
+            await ctx.send(f'Photo album renamed to {album_name}.')
         else:
             await ctx.send('Error renaming album. Please check the logs for details.')
 
@@ -225,7 +225,7 @@ class PhotoBot(commands.Bot):
         Args:
             ctx (commands.Context): The context of the command.
         '''
-        channel_id = ctx.channel.id
+        channel_id = str(ctx.channel.id)
         self.update_channel(channel_id, True)
         await ctx.send('All photos uploaded in this channel will be captured.')
 
@@ -237,7 +237,7 @@ class PhotoBot(commands.Bot):
         Args:
             ctx (commands.Context): The context of the command.
         '''
-        channel_id = ctx.channel.id
+        channel_id = str(ctx.channel.id)
         self.update_channel(channel_id, False)
         await ctx.send('Photos no longer being captured in this channel.')
 
