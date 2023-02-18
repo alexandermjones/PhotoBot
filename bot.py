@@ -11,7 +11,6 @@ from typing import Any
 
 # Third party imports.
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 # Add the message_content intent to manage Attachments
@@ -31,14 +30,19 @@ class PhotoBot(commands.Bot):
     
     Inherits from a Discord bot with additional events.
 
-    The main functionality of the Bot is that it sends the URLs of images uploaded in the channel to self.db_url.
+    The main functionality of the Bot is that it sends the URLs of images uploaded in the channel to self.photo_url.
 
     Non-inherited public attributes:
-        db_url (str): The URL to the database where URLs of photos are stored.
+        photo_url (str): The URL to the database where URLs of photos are stored.
+        album_url (str): The URL to the database where album names are stored.
         image_suffixes (list): The suffixes for attachments which are sent to the database.
+        channels_path (pathlib.Path): The filepath at which channels to save attachments from are stored.
+        channels (dict): The dictionary of channel IDs and whether to save attachements from them or not.
     
     Non-inherited public methods:
         handle_image: Send a URL of an image to self.db_url.
+        update_channel_name: Post a URL of an image and channel_id the image was sent in to self.db_url.
+        update_channel: Update self.channels and the file at self.channels_path to add or remove it from the channels to post in.
         add_events: Add the new events to the bot.
     '''
     def __init__(self,
@@ -54,9 +58,8 @@ class PhotoBot(commands.Bot):
         super().__init__(command_prefix=command_prefix,
                          intents=INTENTS,
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
-        self.photo_url = db_url.replace('SUBDOMAIN', 'photo')
-        self.album_url = db_url.replace('SUBDOMAIN', 'album')
-        self.command_prefix = command_prefix
+        self.photo_url = db_url + 'photo'
+        self.album_url = db_url + 'album'
         self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png']
         self.channels_path = Path('channels.json')
         if not self.channels_path.is_file():
@@ -102,7 +105,7 @@ class PhotoBot(commands.Bot):
         post_data = json.dumps({'channelId': channel_id, 'name': album_name})
         r = requests.post(url=self.album_url, data=post_data)
         if r.status_code == 200:
-            logging.info(f'Successfully updated {channel_id} with album name: {album_name}.')
+            logging.info(f'Successfully updated: {channel_id} with album name: {album_name}.')
             return True
         else:
             logging.error(f'Error updating {channel_id} name. The server responded: {r.reason} with status code {r.status_code}.')
@@ -147,20 +150,16 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = []
-        for attachment in message.attachments:
-            if Path(attachment.filename).suffix.lower() in self.image_suffixes:
-                image_urls.append(attachment.url)
+        image_urls = [a for a in message.attachments if Path(a.filename).suffix.lower() in self.image_suffixes]
 
         # Handle these URLs
-        successes = []
-        for image_url in image_urls:
-            successes.append(self.handle_image(image_url, channel_id))
+        successes = [self.handle_image(image_url, channel_id) for image_url in image_urls]
 
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
             await message.add_reaction('📸')
         
+        # Process any commands along with the attachments
         await self.process_commands(message)
 
 
@@ -174,12 +173,14 @@ class PhotoBot(commands.Bot):
         '''
         if isinstance(error, commands.CommandNotFound):
             await ctx.send('**Invalid command. Try using** `help` **to figure out commands!**')
-        if isinstance(error, commands.MissingRequiredArgument):
+        elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('**Please pass in all requirements to use the command. Try using** `help`**!**')
-        if isinstance(error, commands.MissingPermissions):
+        elif isinstance(error, commands.MissingPermissions):
             await ctx.send('**You dont have all the requirements or permissions for using this command :angry:**')
-        if isinstance(error, commands.errors.CommandInvokeError):
+        elif isinstance(error, commands.errors.CommandInvokeError):
             await ctx.send('**There was a connection error somewhere, why don\'t you try again now?**')
+        else:
+            logging.error(f'Unhandled error with: {ctx}. Raised: {error}.')
 
 
     async def on_ready(self) -> None:
@@ -227,7 +228,7 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = str(ctx.channel.id)
         self.update_channel(channel_id, True)
-        await ctx.send('All photos uploaded in this channel will be captured.')
+        await ctx.send('All photos uploaded in this channel will be captured 📷.')
 
 
     async def stop_capture_album(self, ctx: commands.Context):
@@ -252,3 +253,40 @@ class PhotoBot(commands.Bot):
         if await self.is_owner(ctx.author):
             await self.tree.sync()
             await ctx.send('Command tree synced 👌.')
+        else:
+            await ctx.send('Only the owner of the bot can use this command 😞.')
+
+
+
+def add_commands_to_bot(bot: PhotoBot):
+    '''
+    Add commands to a PhotoBot object.
+
+    Functions have to be tied to class instance, not class, due to decorators attached to object.
+
+    Args:
+        bot (PhotoBot): An instance of the PhotoBot class.
+    '''
+    @bot.hybrid_command(name='album',
+                        description='Name the photo album for this channel ID.',
+                        brief='Name the photo album for this channel ID.',
+                        usage='The new name of the album.')
+    async def name_album(ctx, album_name: str):
+        await bot.name_album(ctx, album_name)
+    
+    @bot.hybrid_command(name='capture',
+                        description='Start capturing uploaded photos in this channel.',
+                        brief='Start capturing uploaded photos in this channel.')
+    async def capture_album(ctx):
+        await bot.capture_album(ctx)
+
+    @bot.hybrid_command(name='stop',
+                        description='Stop capturing uploaded photos in this channel.',
+                        brief='Start capturing uploaded photos in this channel.')
+    async def stop_capture_album(ctx):
+        await bot.stop_capture_album(ctx)
+
+    @bot.command(name='sync_commands_photobot',
+                 hidden=True)
+    async def sync_command_tree(ctx):
+        await bot.sync_command_tree(ctx)
