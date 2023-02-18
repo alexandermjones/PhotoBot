@@ -282,7 +282,7 @@ def add_commands_to_bot(bot: PhotoBot):
 
     @bot.hybrid_command(name='stop',
                         description='Stop capturing uploaded photos in this channel.',
-                        brief='Start capturing uploaded photos in this channel.')
+                        brief='Stop capturing uploaded photos in this channel.')
     async def stop_capture_album(ctx):
         await bot.stop_capture_album(ctx)
 

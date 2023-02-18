@@ -33,7 +33,7 @@ if __name__ == '__main__':
     bot = PhotoBot(db_url, command_prefix='!')
     add_commands_to_bot(bot)
 
-    # Change presence of bot to watching for photos
-    bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
-
     bot.run(token)
+
+    # Change presence of bot to watching for photos
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
