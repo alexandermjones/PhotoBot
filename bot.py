@@ -70,18 +70,21 @@ class PhotoBot(commands.Bot):
         self.add_events()
 
     
-    def handle_image(self, image_url: str, channel_id: str) -> bool:
+    def handle_image(self, image_url: str, channel_id: str, uploader_id: str, upload_time: str, caption: str) -> bool:
         '''
         Post a URL of an image and channel_id the image was sent in to self.db_url.
 
         Args:
             image_url (str): The URL of the image to post to self.db_url.
             channel_id (str): The ID of the channel the image was sent in.
+            uploader_id (str): The ID of the uploader.
+            upload_time (str): The original time of the upload message. (ISO 8601 format)
+            caption (str): The text written along with the upload message. (First 100 chars)
 
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = json.dumps({'url': image_url, 'channelId': channel_id})
+        post_data = json.dumps({'url': image_url, 'channelId': channel_id, 'uploaderId': uploader_id, 'uploadTime': upload_time, 'caption': caption})
         r = requests.post(url=self.photo_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
@@ -150,10 +153,14 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [a for a in message.attachments if Path(a.filename).suffix.lower() in self.image_suffixes]
+        image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+
+        uploader_id = str(message.author.id)
+        upload_time = message.created_at.isoformat()
+        caption = message.content[:100]
 
         # Handle these URLs
-        successes = [self.handle_image(image_url, channel_id) for image_url in image_urls]
+        successes = [self.handle_image(image_url, channel_id, uploader_id, upload_time, caption) for image_url in image_urls]
 
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
