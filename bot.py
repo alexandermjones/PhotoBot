@@ -156,7 +156,7 @@ class PhotoBot(commands.Bot):
         image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
 
         uploader_id = str(message.author.id)
-        upload_time = message.created_at.isoformat()
+        upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
 
         # Handle these URLs
