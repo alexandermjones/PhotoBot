@@ -228,6 +228,8 @@ class PhotoBot(commands.Bot):
         '''
         channel_id = str(ctx.channel.id)
         self.update_channel(channel_id, True)
+        # Change presence of bot to watching for photos
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
         await ctx.send('All photos uploaded in this channel will be captured 📷.')
 
 
