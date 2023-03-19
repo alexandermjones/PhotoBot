@@ -107,7 +107,7 @@ class PhotoBot(commands.Bot):
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = json.dumps({'channelId': channel_id, 'name': album_name, 'participantIds': members })
+        post_data = json.dumps({'channelId': channel_id, 'name': album_name, 'members': members })
         r = requests.post(url=self.album_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Successfully updated: {channel_id} with album name: {album_name}.')
