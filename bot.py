@@ -211,7 +211,7 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot. Added using a decorator in main.
     '''
-    async def capture_album(self, ctx: commands.Context, *, album_name: str) -> None:
+    async def capture_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
 
@@ -283,7 +283,7 @@ def add_commands_to_bot(bot: PhotoBot):
     @bot.hybrid_command(name='album',
                         description='Name the photo album for this channel ID.',
                         brief='Start cpaturing uploaded photos in this channel. Also rename the album. Update the users in album.')
-    async def capture_album(ctx, album_name: str=""):
+    async def capture_album(ctx, *, album_name: str=""):
         await bot.capture_album(ctx, album_name)
 
     @bot.hybrid_command(name='stop',
