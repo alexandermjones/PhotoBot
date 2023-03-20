@@ -34,6 +34,3 @@ if __name__ == '__main__':
     add_commands_to_bot(bot)
 
     bot.run(token)
-
-    # Change presence of bot to watching for photos
-    bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))

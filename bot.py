@@ -16,6 +16,7 @@ from discord.ext import commands
 # Add the message_content intent to manage Attachments
 INTENTS = discord.Intents.default()
 INTENTS.message_content = True
+INTENTS.members = True
 
 # Set the logging level and write to file
 logging.basicConfig(filename='bot.log',
@@ -94,18 +95,19 @@ class PhotoBot(commands.Bot):
             return False
 
 
-    def update_channel_name(self, channel_id: str, album_name: str) -> bool:
+    def update_channel(self, channel_id: str, album_name: str, members: list) -> bool:
         '''
         Send an updated album name for the given channel_id.
 
         Args:
             channel_id (str): The ID of the channel the image was sent in.
             album_name (str): The album name to POST.
+            members (list): List of users ID present in the discord channel.
 
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = json.dumps({'channelId': channel_id, 'name': album_name})
+        post_data = json.dumps({'channelId': channel_id, 'name': album_name, 'members': members })
         r = requests.post(url=self.album_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Successfully updated: {channel_id} with album name: {album_name}.')
@@ -115,7 +117,7 @@ class PhotoBot(commands.Bot):
             return False
 
 
-    def update_channel(self, channel_id: str, capture: bool) -> None:
+    def update_capture(self, channel_id: str, capture: bool) -> None:
         '''
         Update self.channels and the file at self.channels_path to add or remove it from the channels to post in.
 
@@ -209,7 +211,7 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot. Added using a decorator in main.
     '''
-    async def name_album(self, ctx: commands.Context, album_name: str) -> None:
+    async def capture_album(self, ctx: commands.Context, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
 
@@ -218,26 +220,28 @@ class PhotoBot(commands.Bot):
             album_name (str): The name of the album.
         '''
         channel_id = str(ctx.channel.id)
+        isNew = not self.channels.get(channel_id, False)
+        members = [str(member.id) for member in ctx.channel.members]
+        members.remove(str(self.user.id))
+
+        if isNew and not album_name:
+            await ctx.send('Error capturing album. Please provide an album name when capturing a new channel.')
+            return
+
+        self.update_capture(channel_id, True)
         album_name = album_name.title()
-        success = self.update_channel_name(channel_id, album_name)
-        if success:
-            await ctx.send(f'Photo album renamed to {album_name}.')
-        else:
-            await ctx.send('Error renaming album. Please check the logs for details.')
-
-
-    async def capture_album(self, ctx: commands.Context):
-        '''
-        Command to tell the bot to capture photos uploaded in the channel.
-
-        Args:
-            ctx (commands.Context): The context of the command.
-        '''
-        channel_id = str(ctx.channel.id)
-        self.update_channel(channel_id, True)
-        # Change presence of bot to watching for photos
+        success = self.update_channel(channel_id, album_name, members)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
-        await ctx.send('All photos uploaded in this channel will be captured 📷.')
+
+        if success:
+            if isNew:
+                await ctx.send(f'New album created: {album_name}. Photos uploaded to this channel will be captured 📷.')
+            elif not album_name:
+                await ctx.send(f'Users in channel updated. Photos uploaded to this channel will still be captured 📷.')
+            else:
+                await ctx.send(f'Album renamed to: {album_name}. Users in channel updated. Photos uploaded to this channel will still be captured 📷.')
+        else:
+            await ctx.send('Error capturing album. Please check the logs for details.')
 
 
     async def stop_capture_album(self, ctx: commands.Context):
@@ -248,7 +252,7 @@ class PhotoBot(commands.Bot):
             ctx (commands.Context): The context of the command.
         '''
         channel_id = str(ctx.channel.id)
-        self.update_channel(channel_id, False)
+        self.update_capture(channel_id, False)
         await ctx.send('Photos no longer being captured in this channel.')
 
 
@@ -278,16 +282,9 @@ def add_commands_to_bot(bot: PhotoBot):
     '''
     @bot.hybrid_command(name='album',
                         description='Name the photo album for this channel ID.',
-                        brief='Name the photo album for this channel ID.',
-                        usage='The new name of the album.')
-    async def name_album(ctx, album_name: str):
-        await bot.name_album(ctx, album_name)
-    
-    @bot.hybrid_command(name='capture',
-                        description='Start capturing uploaded photos in this channel.',
-                        brief='Start capturing uploaded photos in this channel.')
-    async def capture_album(ctx):
-        await bot.capture_album(ctx)
+                        brief='Start cpaturing uploaded photos in this channel. Also rename the album. Update the users in album.')
+    async def capture_album(ctx, album_name: str=""):
+        await bot.capture_album(ctx, album_name)
 
     @bot.hybrid_command(name='stop',
                         description='Stop capturing uploaded photos in this channel.',
