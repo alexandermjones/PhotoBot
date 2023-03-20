@@ -79,8 +79,8 @@ class PhotoBot(commands.Bot):
             image_url (str): The URL of the image to post to self.db_url.
             channel_id (str): The ID of the channel the image was sent in.
             uploader_id (str): The ID of the uploader.
-            upload_time (str): The original time of the upload message. (ISO 8601 format)
-            caption (str): The text written along with the upload message. (First 100 chars)
+            upload_time (str): The original time of the upload message (ISO 8601 format).
+            caption (str): The text written along with the upload message (first 100 chars).
 
         Returns:
             bool: True if succesfully posted, False if not.
@@ -97,7 +97,7 @@ class PhotoBot(commands.Bot):
 
     def update_channel(self, channel_id: str, album_name: str, members: list) -> bool:
         '''
-        Send an updated album name for the given channel_id.
+        Send an updated album name and members list for the given channel_id.
 
         Args:
             channel_id (str): The ID of the channel the image was sent in.
