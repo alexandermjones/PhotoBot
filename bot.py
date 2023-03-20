@@ -211,7 +211,7 @@ class PhotoBot(commands.Bot):
     '''
     Commands for the bot. Added using a decorator in main.
     '''
-    async def capture_album(self, ctx: commands.Context, album_name: str) -> None:
+    async def capture_album(self, ctx: commands.Context, *, album_name: str) -> None:
         '''
         Command to name the album for a given channel, starts an album if not currently in the channel.
 
