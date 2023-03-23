@@ -20,7 +20,6 @@ INTENTS.members = True
 
 # Set the logging level and write to file
 logging.basicConfig(filename='bot.log',
-                    filemode='w',
                     format='%(levelname)s - %(asctime)s - %(message)s', 
                     level=logging.INFO)
 
@@ -70,6 +69,7 @@ class PhotoBot(commands.Bot):
             with open(self.channels_path, 'r') as f:
                 self.channels = json.load(f)
         self.add_events()
+        logging.info('PhotoBot initialised.')
 
     
     def handle_image(self, 
@@ -214,6 +214,7 @@ class PhotoBot(commands.Bot):
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send('**You dont have all the requirements or permissions for using this command :angry:**')
         elif isinstance(error, commands.errors.CommandInvokeError):
+            logging.warning('CommandInvokeError for command: {ctx.command}.')
             await ctx.send('**There was a connection error somewhere, why don\'t you try again now?**')
         else:
             logging.error(f'Unhandled error with: {ctx}. Raised: {error}.')
@@ -221,9 +222,9 @@ class PhotoBot(commands.Bot):
 
     async def on_ready(self) -> None:
         '''
-        Print message to confirm the PhotoBot has been created, then sync commands.
+        Print message to confirm the PhotoBot has been created.
         '''
-        print(f'PhotoBot created as: {self.user.name}.')
+        logging.info(f'PhotoBot running as: {self.user.name}.')
 
 
     def add_events(self) -> None:
@@ -323,3 +324,5 @@ def add_commands_to_bot(bot: PhotoBot):
                  hidden=True)
     async def sync_command_tree(ctx):
         await bot.sync_command_tree(ctx)
+    
+    logging.info('Commands added to PhotoBot.')
