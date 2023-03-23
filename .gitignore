@@ -1,3 +1,9 @@
+# Ignore key
+photobot-key
+
+# Ignore channels json folder
+channels.json
+
 # Ignore vscode folder
 .vscode
 
