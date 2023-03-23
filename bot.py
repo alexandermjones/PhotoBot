@@ -61,6 +61,7 @@ class PhotoBot(commands.Bot):
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
         self.photo_url = db_url + 'photo'
         self.album_url = db_url + 'album'
+        self.delete_photo_url = db_url + 'delete_photo_by_url'
         self.image_suffixes = ['.jpg', '.jpeg', '.webp', '.png']
         self.channels_path = Path('channels.json')
         if not self.channels_path.is_file():
@@ -71,7 +72,12 @@ class PhotoBot(commands.Bot):
         self.add_events()
 
     
-    def handle_image(self, image_url: str, channel_id: str, uploader_id: str, upload_time: str, caption: str) -> bool:
+    def handle_image(self, 
+                     image_url: str, 
+                     channel_id: str, 
+                     uploader_id: str, 
+                     upload_time: str, 
+                     caption: str) -> bool:
         '''
         Post a URL of an image and channel_id the image was sent in to self.db_url.
 
@@ -130,6 +136,27 @@ class PhotoBot(commands.Bot):
             json.dump(self.channels, f)
         logging.info(f'Channel ID: {channel_id} now has capture status: {capture}.')
         return
+    
+
+    def delete_photo(self, image_url: str, requester_id: str) -> int:
+        '''
+        Send a request to delete a photo from the db.
+
+        Args:
+            image_url (str): The URL of the photo to remove from the DB.
+            requester_id (str): The ID of the requester sending the deletion.
+        
+        Returns:
+            int: The response code of the server for the request.
+        '''
+        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
+        r = requests.post(url=self.album_url, data=post_data)
+
+        if r.status_code == 200:
+            logging.info(f'Successfully deleted photo with URL: {image_url} from database.')
+        else:
+            logging.error(f'Error deleting photo with URL: {image_url}. The server responded: {r.reason} with status code {r.status_code}.')
+        return r.status_code
 
 
     '''
@@ -220,11 +247,11 @@ class PhotoBot(commands.Bot):
             album_name (str): The name of the album.
         '''
         channel_id = str(ctx.channel.id)
-        isNew = not self.channels.get(channel_id, False)
+        is_new = not self.channels.get(channel_id, False)
         members = [str(member.id) for member in ctx.channel.members]
         members.remove(str(self.user.id))
 
-        if isNew and not album_name:
+        if is_new and not album_name:
             await ctx.send('Error capturing album. Please provide an album name when capturing a new channel.')
             return
 
@@ -234,7 +261,7 @@ class PhotoBot(commands.Bot):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
 
         if success:
-            if isNew:
+            if is_new:
                 await ctx.send(f'New album created: {album_name}. Photos uploaded to this channel will be captured 📷.')
             elif not album_name:
                 await ctx.send(f'Users in channel updated. Photos uploaded to this channel will still be captured 📷.')
