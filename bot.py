@@ -224,7 +224,7 @@ class PhotoBot(commands.Bot):
         # Delete photos from the database which have a '❌' added
         if payload.emoji == '❌':
             image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
-            responses = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+            _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
 
         return
 
