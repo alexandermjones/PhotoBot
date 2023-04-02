@@ -17,6 +17,7 @@ from discord.ext import commands
 INTENTS = discord.Intents.default()
 INTENTS.message_content = True
 INTENTS.members = True
+INTENTS.reactions = True
 
 # Set the logging level and write to file
 logging.basicConfig(filename='bot.log',
@@ -169,7 +170,7 @@ class PhotoBot(commands.Bot):
         Sends all image attachments to self.handle_image and then reacts to the message with a camera emoji.
 
         Args:
-            message: A Discord message event.
+            discrd.Message: A Discord message event.
         '''
         # Ignore if the Bot is the messager, so we don't enter into a recursive loop
         if message.author == self.user:
@@ -197,6 +198,35 @@ class PhotoBot(commands.Bot):
         
         # Process any commands along with the attachments
         await self.process_commands(message)
+    
+
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        '''
+        Handle functionality for when a reaction is added to a message.
+
+        Removes a photo from the database if an ❌ emoji is added.
+
+        Args:
+            discord.RawReactionActionEvent: The payload of the reaction event.
+        '''
+        # Ignore the bot's own reactions
+        if payload.member == self.user:
+            pass
+        
+        # Get the message the reaction was added to
+        channel = self.get_partial_messageable(payload.channel_id)
+        message = channel.fetch_message(payload.message_id)
+
+        # Ignore reactions which the bot has not added 📸 (i.e. capture) to
+        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
+            pass
+
+        # Delete photos from the database which have a '❌' added
+        if payload.emoji == '❌':
+            image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+            responses = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+
+        return
 
 
     async def on_command_error(self, ctx: commands.Context, error: Any) -> None:
@@ -232,6 +262,7 @@ class PhotoBot(commands.Bot):
         Add the new events to the bot.
         '''
         self.on_message = self.event(self.on_message)
+        self.on_raw_reaction_add = self.event(self.on_raw_reaction_add)
         self.on_command_error = self.event(self.on_command_error)
         self.on_ready = self.event(self.on_ready)
 
