@@ -215,17 +215,16 @@ class PhotoBot(commands.Bot):
         
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
-        message = channel.fetch_message(payload.message_id)
+        message = await channel.fetch_message(payload.message_id)
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
-        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
+        if not ('📸', True) in [(str(r.emoji), r.me) for r in message.reactions]:
             pass
 
         # Delete photos from the database which have a '❌' added
-        if payload.emoji == '❌':
+        if str(payload.emoji) == '❌':
             image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
-
         return
 
 
