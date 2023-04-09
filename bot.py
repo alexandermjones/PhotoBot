@@ -150,8 +150,8 @@ class PhotoBot(commands.Bot):
         Returns:
             int: The response code of the server for the request.
         '''
-        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
-        r = requests.post(url=self.album_url, data=post_data)
+        post_data = json.dumps({'url': image_url, 'requesterId': requester_id})
+        r = requests.post(url=self.delete_photo_url, data=post_data)
 
         if r.status_code == 200:
             logging.info(f'Successfully deleted photo with URL: {image_url} from database.')
