@@ -1,6 +1,9 @@
 # Ignore key
 photobot-key
 
+# Ignore log
+bot.log
+
 # Ignore channels json folder
 channels.json
 
