@@ -78,7 +78,8 @@ class PhotoBot(commands.Bot):
                      channel_id: str, 
                      uploader_id: str, 
                      upload_time: str, 
-                     caption: str) -> bool:
+                     caption: str,
+                     message_id: str) -> bool:
         '''
         Post a URL of an image and channel_id the image was sent in to self.db_url.
 
@@ -88,11 +89,12 @@ class PhotoBot(commands.Bot):
             uploader_id (str): The ID of the uploader.
             upload_time (str): The original time of the upload message (ISO 8601 format).
             caption (str): The text written along with the upload message (first 100 chars).
+            message_id (str): The ID of the message.
 
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = json.dumps({'url': image_url, 'channelId': channel_id, 'uploaderId': uploader_id, 'uploadTime': upload_time, 'caption': caption})
+        post_data = json.dumps({'url': image_url, 'channelId': channel_id, 'uploaderId': uploader_id, 'uploadTime': upload_time, 'caption': caption, 'messageId': message_id })
         r = requests.post(url=self.photo_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
@@ -188,9 +190,10 @@ class PhotoBot(commands.Bot):
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
+        message_id = str(message.id);
 
         # Handle these URLs
-        successes = [self.handle_image(image_url, channel_id, uploader_id, upload_time, caption) for image_url in image_urls]
+        successes = [self.handle_image(image_url, channel_id, uploader_id, upload_time, caption, message_id) for image_url in image_urls]
 
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
