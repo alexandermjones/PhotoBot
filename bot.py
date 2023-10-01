@@ -8,6 +8,7 @@ import logging
 import requests
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 # Third party imports.
 import discord
@@ -150,8 +151,8 @@ class PhotoBot(commands.Bot):
         Returns:
             int: The response code of the server for the request.
         '''
-        post_data = json.dumps({'url': image_url, 'requesterId': requester_id})
-        r = requests.post(url=self.delete_photo_url, data=post_data)
+        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
+        r = requests.post(url=self.album_url, data=post_data)
 
         if r.status_code == 200:
             logging.info(f'Successfully deleted photo with URL: {image_url} from database.')
@@ -183,7 +184,7 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+        image_urls = [a.url for a in message.attachments if Path(urlparse(a.url).path).suffix.lower() in self.image_suffixes]
 
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
@@ -215,16 +216,17 @@ class PhotoBot(commands.Bot):
         
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
+        message = channel.fetch_message(payload.message_id)
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
-        if not ('📸', True) in [(str(r.emoji), r.me) for r in message.reactions]:
+        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
             pass
 
         # Delete photos from the database which have a '❌' added
-        if str(payload.emoji) == '❌':
+        if payload.emoji == '❌':
             image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+
         return
 
 
