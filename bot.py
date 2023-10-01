@@ -104,7 +104,7 @@ class PhotoBot(commands.Bot):
             return False
 
 
-    def update_channel(self, channel_id: str, album_name: str, members: list) -> bool:
+    def update_channel(self, channel_id: str, album_name: str, members: list) -> str:
         '''
         Send an updated album name and members list for the given channel_id.
 
@@ -118,12 +118,13 @@ class PhotoBot(commands.Bot):
         '''
         post_data = json.dumps({'channelId': channel_id, 'name': album_name, 'members': members })
         r = requests.post(url=self.album_url, data=post_data)
+        
         if r.status_code == 200:
             logging.info(f'Successfully updated: {channel_id} with album name: {album_name}.')
-            return True
+            return r.json().get('albumUrl')
         else:
             logging.error(f'Error updating {channel_id} name. The server responded: {r.reason} with status code {r.status_code}.')
-            return False
+            return None
 
 
     def update_capture(self, channel_id: str, capture: bool) -> None:
@@ -291,16 +292,18 @@ class PhotoBot(commands.Bot):
 
         self.update_capture(channel_id, True)
         album_name = album_name.title()
-        success = self.update_channel(channel_id, album_name, members)
+        url = self.update_channel(channel_id, album_name, members)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
 
-        if success:
+        if url:
             if is_new:
                 await ctx.send(f'New album created: {album_name}. Photos uploaded to this channel will be captured 📷.')
             elif not album_name:
                 await ctx.send(f'Users in channel updated. Photos uploaded to this channel will still be captured 📷.')
             else:
                 await ctx.send(f'Album renamed to: {album_name}. Users in channel updated. Photos uploaded to this channel will still be captured 📷.')
+                
+            await ctx.send(f'Album is available at: {url}')
         else:
             await ctx.send('Error capturing album. Please check the logs for details.')
 
