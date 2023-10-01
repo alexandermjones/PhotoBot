@@ -184,7 +184,7 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [a.url for a in message.attachments if Path(urlparse(a.url).path).suffix.lower() in self.image_suffixes]
+        image_urls = [urlparse(a.url).path for a in message.attachments if Path(urlparse(a.url).path).suffix.lower() in self.image_suffixes]
 
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
