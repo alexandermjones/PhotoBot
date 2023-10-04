@@ -187,12 +187,12 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [urlparse(a.url).path for a in message.attachments if Path(urlparse(a.url).path).suffix.lower() in self.image_suffixes]
+        image_urls = [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
 
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
-        message_id = str(message.id);
+        message_id = str(message.id)
 
         # Handle these URLs
         successes = [self.handle_image(image_url, channel_id, uploader_id, upload_time, caption, message_id) for image_url in image_urls]
@@ -249,7 +249,7 @@ class PhotoBot(commands.Bot):
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send('**You dont have all the requirements or permissions for using this command :angry:**')
         elif isinstance(error, commands.errors.CommandInvokeError):
-            logging.warning('CommandInvokeError for command: {ctx.command}.')
+            logging.warning(f'CommandInvokeError for command: {ctx.command}.')
             await ctx.send('**There was a connection error somewhere, why don\'t you try again now?**')
         else:
             logging.error(f'Unhandled error with: {ctx}. Raised: {error}.')
@@ -364,3 +364,18 @@ def add_commands_to_bot(bot: PhotoBot):
         await bot.sync_command_tree(ctx)
     
     logging.info('Commands added to PhotoBot.')
+
+
+def parse_url(url: str) -> str:
+    '''
+    Parse a Discord attachment URL to verified format.
+
+    Args:
+        url (str): A URL of a Discord attachment.
+    
+    Returns:
+        str: The parsed URL of a Discord attachment.
+    '''
+    parse = urlparse(url)
+    parsed_url = f'{parse.scheme}://{parse.netloc}{parse.path}'
+    return parsed_url
