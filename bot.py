@@ -259,6 +259,9 @@ class PhotoBot(commands.Bot):
         '''
         Print message to confirm the PhotoBot has been created.
         '''
+        # Change presence if it is already capturing
+        if any(self.channels.values()):
+            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='for photos...'))
         logging.info(f'PhotoBot running as: {self.user.name}.')
 
 
