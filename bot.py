@@ -237,7 +237,7 @@ class PhotoBot(commands.Bot):
                 var1 = variables[i]
                 var2 = variables[j]
                 result = f"{i}: {var1} == {j}: {var2}: {var1 == var2}"
-                print(result)       
+                logging.info(result)    
 
 
         #emoji_code = ord(payload.emoji)
