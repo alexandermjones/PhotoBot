@@ -217,6 +217,7 @@ class PhotoBot(commands.Bot):
             pass
         
         # DELETE THIS
+        logging.info("TEST")
         emoji_code = ord(payload.emoji)
         logging.info(f'Saw an emoji!!! {emoji_code}')
 
