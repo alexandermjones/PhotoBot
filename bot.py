@@ -176,6 +176,10 @@ class PhotoBot(commands.Bot):
         Args:
             discrd.Message: A Discord message event.
         '''
+
+        #DELETE ME
+        logging.info("a message")
+
         # Ignore if the Bot is the messager, so we don't enter into a recursive loop
         if message.author == self.user:
             return
@@ -218,7 +222,7 @@ class PhotoBot(commands.Bot):
 
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
-        message = channel.fetch_message(payload.message_id)
+        message = await channel.fetch_message(payload.message_id)
         emoji = payload.emoji.name
 
         # Capture photos which have a '📷/📸' added
