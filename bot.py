@@ -228,7 +228,7 @@ class PhotoBot(commands.Bot):
         # Capture photos which have a '📷/📸' added
         if emoji == '📷' or emoji == '📸':
             logging.info(f'Saw capture photo emoji')
-            self.on_message(message)
+            await self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
         if emoji == '❌':
