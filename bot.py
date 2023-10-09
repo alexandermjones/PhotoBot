@@ -216,6 +216,9 @@ class PhotoBot(commands.Bot):
         if payload.member == self.user:
             pass
         
+        # DELETE THIS
+        logging.info(f'Saw an emoji')
+
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
         message = channel.fetch_message(payload.message_id)
