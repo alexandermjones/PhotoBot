@@ -218,8 +218,8 @@ class PhotoBot(commands.Bot):
         
         # DELETE THIS
         emoji_code = ord(payload.emoji)
-        logging.info(f'Saw an emoji. {emoji_code}')
-        
+        logging.info(f'Saw an emoji!!! {emoji_code}')
+
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
         message = channel.fetch_message(payload.message_id)
