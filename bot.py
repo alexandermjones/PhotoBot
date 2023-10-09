@@ -249,15 +249,15 @@ class PhotoBot(commands.Bot):
         message = channel.fetch_message(payload.message_id)
 
         # Capture photos which have a '📷/📸' added
-        if emoji_code == 128247 or emoji_code == 128248:
-            logging.info(f'Saw capture photo emoji')
-            self.on_message(message)
+        #if emoji_code == 128247 or emoji_code == 128248:
+        #    logging.info(f'Saw capture photo emoji')
+        #    self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
-        if emoji_code == 10060:
-            logging.info(f'Saw delete emoji')
-            image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
-            _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+        #if emoji_code == 10060:
+        #    logging.info(f'Saw delete emoji')
+        #    image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+        #    _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
         # if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
