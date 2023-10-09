@@ -223,15 +223,13 @@ class PhotoBot(commands.Bot):
         b = payload.emoji
         c = payload.emoji.name
         d = ord('❌')
-        e = ord(payload.emoji)
         f = ord(payload.emoji.name)
         g = 10060
         h = '❌'.encode('unicode_escape').decode('utf-8')
-        i = payload.emoji.encode('unicode_escape').decode('utf-8')
         j = payload.emoji.name.encode('unicode_escape').decode('utf-8')
         k = '\u274C'
 
-        variables = [a, b, c, d, e, f, g, h, i, j, k]
+        variables = [a, b, c, d, f, g, h, j, k]
 
         # Compare and log the results
         for i in range(len(variables)):
