@@ -216,21 +216,48 @@ class PhotoBot(commands.Bot):
         if payload.member == self.user:
             pass
         
-        emoji_code = payload.emoji.name.encode('unicode_escape').decode('utf-8')        
-        logging.info(f'Saw an emoji {emoji_code}')
+        # DELETE THIS
+        logging.info("TEST")
+
+        a = '❌'
+        b = payload.emoji
+        c = payload.emoji.name
+        d = ord('❌')
+        e = ord(payload.emoji)
+        f = ord(payload.emoji.name)
+        g = 10060
+        h = '❌'.encode('unicode_escape').decode('utf-8')
+        i = payload.emoji.encode('unicode_escape').decode('utf-8')
+        j = payload.emoji.name.encode('unicode_escape').decode('utf-8')
+        k = '\u274C'
+
+        variables = [a, b, c, d, e, f, g, h, i, j, k]
+
+        # Compare and log the results
+        for i in range(len(variables)):
+            for j in range(i + 1, len(variables)):
+                var1 = variables[i]
+                var2 = variables[j]
+                result = f"{i} == {j}: {var1 == var2}"
+                print(result)       
+
+
+        #emoji_code = ord(payload.emoji)
+        
+        #logging.info(f'Saw an emoji!!! {emoji_code}')
 
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
         message = channel.fetch_message(payload.message_id)
 
         # Capture photos which have a '📷/📸' added
-        if emoji_code == '\U0001f4f7' or emoji_code == '\U0001f4f8':
-            logging.info(f'Identified photo emoji')
+        if emoji_code == 128247 or emoji_code == 128248:
+            logging.info(f'Saw capture photo emoji')
             self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
-        if emoji_code == '\u274c':
-            logging.info(f'Identified delete emoji')
+        if emoji_code == 10060:
+            logging.info(f'Saw delete emoji')
             image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
 
