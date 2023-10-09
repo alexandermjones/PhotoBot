@@ -238,7 +238,7 @@ class PhotoBot(commands.Bot):
             for j in range(i + 1, len(variables)):
                 var1 = variables[i]
                 var2 = variables[j]
-                result = f"{i} == {j}: {var1 == var2}"
+                result = f"{i}: {var1} == {j}: {var2}: {var1 == var2}"
                 print(result)       
 
 
