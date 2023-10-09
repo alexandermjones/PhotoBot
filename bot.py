@@ -218,18 +218,19 @@ class PhotoBot(commands.Bot):
         
         # DELETE THIS
         logging.info(f'Saw an emoji')
+        logging.info(payload.emoji)
 
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
         message = channel.fetch_message(payload.message_id)
 
         # Capture photos which have a '📸' added
-        if payload.emoji == '📷' or payload.emoji == '📸':
+        if payload.emoji == "📷" or payload.emoji == "📸":
             logging.info(f'Saw capture photo emoji')
             self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
-        if payload.emoji == '❌':
+        if payload.emoji == "❌":
             logging.info(f'Saw delete emoji')
             image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
