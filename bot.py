@@ -234,6 +234,7 @@ class PhotoBot(commands.Bot):
             logging.info(f'Saw delete emoji')
             image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+            await message.add_reaction('❌')
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
         # if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
