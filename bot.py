@@ -154,7 +154,7 @@ class PhotoBot(commands.Bot):
         Returns:
             int: The response code of the server for the request.
         '''
-        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
+        post_data = json.dumps({'url': image_url, 'requesterId': requester_id})
         r = requests.post(url=self.delete_photo_url, data=post_data)
 
         if r.status_code == 200:
@@ -213,7 +213,7 @@ class PhotoBot(commands.Bot):
             discord.RawReactionActionEvent: The payload of the reaction event.
         '''
         # Ignore the bot's own reactions
-        if payload.member == self.user:
+        if payload.user_id == self.user.id:
             pass
 
         # Get the message the reaction was added to
