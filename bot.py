@@ -191,8 +191,7 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
-
+        image_urls = self.get_filtered_urls(message)
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
@@ -233,7 +232,7 @@ class PhotoBot(commands.Bot):
         # Delete photos from the database which have a '❌' added
         if emoji == '❌':
             logging.info(f'Saw delete emoji')
-            image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+            image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
@@ -345,6 +344,16 @@ class PhotoBot(commands.Bot):
             await ctx.send('Command tree synced 👌.')
         else:
             await ctx.send('Only the owner of the bot can use this command 😞.')
+
+
+    async def get_filtered_urls(self, message: discord.Message):
+        '''
+        Helper command to get all of the filtered image urls inside a message
+
+        Args:
+            message (discord.Message): The message to get the urls from.
+        '''
+        return [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
 
 
 
