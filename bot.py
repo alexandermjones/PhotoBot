@@ -154,8 +154,8 @@ class PhotoBot(commands.Bot):
         Returns:
             int: The response code of the server for the request.
         '''
-        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
-        r = requests.post(url=self.album_url, data=post_data)
+        post_data = json.dumps({'url': image_url, 'requesterId': requester_id})
+        r = requests.post(url=self.delete_photo_url, data=post_data)
 
         if r.status_code == 200:
             logging.info(f'Successfully deleted photo with URL: {image_url} from database.')
@@ -176,6 +176,7 @@ class PhotoBot(commands.Bot):
         Args:
             discrd.Message: A Discord message event.
         '''
+
         # Ignore if the Bot is the messager, so we don't enter into a recursive loop
         if message.author == self.user:
             return
@@ -187,8 +188,7 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
-
+        image_urls = self.get_filtered_urls(message)
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
@@ -209,31 +209,33 @@ class PhotoBot(commands.Bot):
         '''
         Handle functionality for when a reaction is added to a message.
 
-        Removes a photo from the database if an ❌ emoji is added.
-
         Args:
             discord.RawReactionActionEvent: The payload of the reaction event.
         '''
         # Ignore the bot's own reactions
-        if payload.member == self.user:
+        if payload.user_id == self.user.id:
             pass
-        
+
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
-        message = channel.fetch_message(payload.message_id)
+        message = await channel.fetch_message(payload.message_id)
+        emoji = payload.emoji.name
 
-        # Capture photos which have a '📸' added
-        if payload.emoji == '📸':
-            self.on_message(message)
+        # Capture photos which have a '📷/📸' added
+        if emoji == '📷' or emoji == '📸':
+            logging.info(f'Saw capture photo emoji')
+            await self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
-        if payload.emoji == '❌':
-            image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+        if emoji == '❌':
+            logging.info(f'Saw delete emoji')
+            image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+            await message.add_reaction('❌')
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
-        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
-            pass
+        # if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
+        #    pass
 
         # TODO record upvotes for other emojis
 
@@ -343,6 +345,16 @@ class PhotoBot(commands.Bot):
             await ctx.send('Command tree synced 👌.')
         else:
             await ctx.send('Only the owner of the bot can use this command 😞.')
+
+
+    def get_filtered_urls(self, message: discord.Message):
+        '''
+        Helper command to get all of the filtered image urls inside a message
+
+        Args:
+            message (discord.Message): The message to get the urls from.
+        '''
+        return [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
 
 
 
