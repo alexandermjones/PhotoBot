@@ -347,7 +347,7 @@ class PhotoBot(commands.Bot):
             await ctx.send('Only the owner of the bot can use this command 😞.')
 
 
-    async def get_filtered_urls(self, message: discord.Message):
+    def get_filtered_urls(self, message: discord.Message):
         '''
         Helper command to get all of the filtered image urls inside a message
 
