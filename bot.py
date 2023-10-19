@@ -223,19 +223,19 @@ class PhotoBot(commands.Bot):
 
         # Capture photos which have a '📷/📸' added
         if emoji == '📷' or emoji == '📸':
-            logging.info(f'Saw capture photo emoji')
+            logging.info(f'Detected capture photo emoji.')
             await self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
         if emoji == '❌':
-            logging.info(f'Saw delete emoji')
+            logging.info(f'Detected delete emoji.')
             image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
             await message.add_reaction('❌')
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
-        # if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
-        #    pass
+        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
+            pass
 
         # TODO record upvotes for other emojis
 
@@ -328,6 +328,24 @@ class PhotoBot(commands.Bot):
         channel_id = str(ctx.channel.id)
         self.update_capture(channel_id, False)
         await ctx.send('Photos no longer being captured in this channel.')
+    
+
+    async def capture_all_photos(self, ctx: commands.Context):
+        '''
+        Command to tell the bot to (re)capture all photos in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        logging.info(f'Capturing all photos in channel: {ctx.channel.name}.')
+        # Iterate through all messages from start to finish
+        async for message in ctx.channel.history(limit=None, oldest_first=True):
+            # Ignore messages without attachment or with the delete emoji
+            if not message.attachments or '❌' in message.reactions:
+                continue
+            else:
+                self.on_message(message)
+        logging.info(f'All photos in channel: {ctx.channel.name} now captured.')
 
 
     async def sync_command_tree(self, ctx: commands.Context):
