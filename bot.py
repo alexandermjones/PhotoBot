@@ -383,8 +383,8 @@ def add_commands_to_bot(bot: PhotoBot):
         bot (PhotoBot): An instance of the PhotoBot class.
     '''
     @bot.hybrid_command(name='album',
-                        description='Name the photo album for this channel ID.',
-                        brief='Start cpaturing uploaded photos in this channel. Also rename the album. Update the users in album.')
+                        description='Capture photos, name the photo album for this channel ID and show the URL.',
+                        brief='Start capturing uploaded photos in this channel, rename the album and update the users in album.')
     async def capture_album(ctx, *, album_name: str=""):
         await bot.capture_album(ctx, album_name)
 
@@ -393,6 +393,12 @@ def add_commands_to_bot(bot: PhotoBot):
                         brief='Stop capturing uploaded photos in this channel.')
     async def stop_capture_album(ctx):
         await bot.stop_capture_album(ctx)
+
+    @bot.hybrid_command(name='add_all',
+                        description='Add all photos in a channel to the album.',
+                        brief='Add all photos to channel.')
+    async def capture_all_photos(ctx):
+        await bot.capture_all_photos(ctx)
 
     @bot.command(name='sync_commands_photobot',
                  hidden=True)
