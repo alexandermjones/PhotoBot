@@ -240,19 +240,19 @@ class PhotoBot(commands.Bot):
 
         # Capture photos which have a '📷/📸' added
         if emoji == '📷' or emoji == '📸':
-            logging.info(f'Saw capture photo emoji')
+            logging.info(f'Detected capture photo emoji.')
             await self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
         if emoji == '❌':
-            logging.info(f'Saw delete emoji')
+            logging.info(f'Detected delete emoji.')
             image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
             await message.add_reaction('❌')
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
-        # if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
-        #    pass
+        if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
+            pass
 
         # TODO record upvotes for other emojis
 
@@ -345,6 +345,24 @@ class PhotoBot(commands.Bot):
         channel_id = str(ctx.channel.id)
         self.update_capture(channel_id, False)
         await ctx.send('Photos no longer being captured in this channel.')
+    
+
+    async def capture_all_photos(self, ctx: commands.Context):
+        '''
+        Command to tell the bot to (re)capture all photos in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        logging.info(f'Capturing all photos in channel: {ctx.channel.name}.')
+        # Iterate through all messages from start to finish
+        async for message in ctx.channel.history(limit=None, oldest_first=True):
+            # Ignore messages without attachment or with the delete emoji
+            if not message.attachments or '❌' in message.reactions:
+                continue
+            else:
+                self.on_message(message)
+        logging.info(f'All photos in channel: {ctx.channel.name} now captured.')
 
 
     async def sync_command_tree(self, ctx: commands.Context):
@@ -385,8 +403,8 @@ def add_commands_to_bot(bot: PhotoBot):
         bot (PhotoBot): An instance of the PhotoBot class.
     '''
     @bot.hybrid_command(name='album',
-                        description='Name the photo album for this channel ID.',
-                        brief='Start cpaturing uploaded photos in this channel. Also rename the album. Update the users in album.')
+                        description='Capture photos, name the photo album for this channel ID and show the URL.',
+                        brief='Start capturing uploaded photos in this channel, rename the album and update the users in album.')
     async def capture_album(ctx, *, album_name: str=""):
         await bot.capture_album(ctx, album_name)
 
@@ -395,6 +413,12 @@ def add_commands_to_bot(bot: PhotoBot):
                         brief='Stop capturing uploaded photos in this channel.')
     async def stop_capture_album(ctx):
         await bot.stop_capture_album(ctx)
+
+    @bot.hybrid_command(name='add_all',
+                        description='Add all photos in a channel to the album.',
+                        brief='Add all photos to channel.')
+    async def capture_all_photos(ctx):
+        await bot.capture_all_photos(ctx)
 
     @bot.command(name='sync_commands_photobot',
                  hidden=True)
