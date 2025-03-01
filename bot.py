@@ -80,7 +80,8 @@ class PhotoBot(commands.Bot):
                      uploader_id: str, 
                      upload_time: str, 
                      caption: str,
-                     message_id: str) -> bool:
+                     message_id: str,
+                     message_index: int) -> bool:
         '''
         Post a URL of an image and channel_id the image was sent in to self.db_url.
 
@@ -95,7 +96,21 @@ class PhotoBot(commands.Bot):
         Returns:
             bool: True if succesfully posted, False if not.
         '''
-        post_data = json.dumps({'url': image_url, 'channelId': channel_id, 'uploaderId': uploader_id, 'uploadTime': upload_time, 'caption': caption, 'messageId': message_id })
+        
+        # Ignore invalid types
+        if not self.is_valid_image_type(image_url):
+            return False
+        
+        post_data = json.dumps({
+            'url': image_url, 
+            'channelId': channel_id, 
+            'uploaderId': uploader_id, 
+            'uploadTime': upload_time, 
+            'caption': caption, 
+            'messageId': message_id, 
+            'messageIndex': message_index 
+            })
+            
         r = requests.post(url=self.photo_url, data=post_data)
         if r.status_code == 200:
             logging.info(f'Image URL of {image_url} succesfully posted to database.')
@@ -154,8 +169,8 @@ class PhotoBot(commands.Bot):
         Returns:
             int: The response code of the server for the request.
         '''
-        post_data = json.dumps({'photoId': image_url, 'requesterId': requester_id})
-        r = requests.post(url=self.album_url, data=post_data)
+        post_data = json.dumps({'url': image_url, 'requesterId': requester_id})
+        r = requests.post(url=self.delete_photo_url, data=post_data)
 
         if r.status_code == 200:
             logging.info(f'Successfully deleted photo with URL: {image_url} from database.')
@@ -176,6 +191,7 @@ class PhotoBot(commands.Bot):
         Args:
             discrd.Message: A Discord message event.
         '''
+
         # Ignore if the Bot is the messager, so we don't enter into a recursive loop
         if message.author == self.user:
             return
@@ -187,15 +203,16 @@ class PhotoBot(commands.Bot):
             return
 
         # Get all image urls in the message
-        image_urls = [parse_url(a.url) for a in message.attachments if Path(parse_url(a.url)).suffix.lower() in self.image_suffixes]
-
         uploader_id = str(message.author.id)
         upload_time = message.created_at.utcnow().replace(microsecond=0).isoformat() + 'Z' # format to match JS
         caption = message.content[:100]
         message_id = str(message.id)
 
         # Handle these URLs
-        successes = [self.handle_image(image_url, channel_id, uploader_id, upload_time, caption, message_id) for image_url in image_urls]
+        successes = [
+            self.handle_image(attachment.url, channel_id, uploader_id, upload_time, caption, message_id, index)
+            for index, attachment in enumerate(message.attachments)
+        ]
 
         # React to the message if it contained an image with a camera with flash emoji
         if any(successes):
@@ -209,27 +226,29 @@ class PhotoBot(commands.Bot):
         '''
         Handle functionality for when a reaction is added to a message.
 
-        Removes a photo from the database if an ❌ emoji is added.
-
         Args:
             discord.RawReactionActionEvent: The payload of the reaction event.
         '''
         # Ignore the bot's own reactions
-        if payload.member == self.user:
-            pass
-        
+        if payload.user_id == self.user.id:
+            return
+
         # Get the message the reaction was added to
         channel = self.get_partial_messageable(payload.channel_id)
-        message = channel.fetch_message(payload.message_id)
+        message = await channel.fetch_message(payload.message_id)
+        emoji = payload.emoji.name
 
-        # Capture photos which have a '📸' added
-        if payload.emoji == '📸':
-            self.on_message(message)
+        # Capture photos which have a '📷/📸' added
+        if emoji == '📷' or emoji == '📸':
+            logging.info(f'Detected capture photo emoji.')
+            await self.on_message(message)
 
         # Delete photos from the database which have a '❌' added
-        if payload.emoji == '❌':
-            image_urls = [a.url for a in message.attachments if Path(a.url).suffix.lower() in self.image_suffixes]
+        if emoji == '❌':
+            logging.info(f'Detected delete emoji.')
+            image_urls = self.get_filtered_urls(message)
             _ = [self.delete_photo(image_url, str(payload.user_id)) for image_url in image_urls]
+            await message.add_reaction('❌')
 
         # Ignore reactions which the bot has not added 📸 (i.e. capture) to
         if not ('📸', True) in any([(r.emoji, r.me) for r in message.reactions]):
@@ -329,6 +348,24 @@ class PhotoBot(commands.Bot):
         channel_id = str(ctx.channel.id)
         self.update_capture(channel_id, False)
         await ctx.send('Photos no longer being captured in this channel.')
+    
+
+    async def capture_all_photos(self, ctx: commands.Context):
+        '''
+        Command to tell the bot to (re)capture all photos in the channel.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+        '''
+        logging.info(f'Capturing all photos in channel: {ctx.channel.name}.')
+        # Iterate through all messages from start to finish
+        async for message in ctx.channel.history(limit=None, oldest_first=True):
+            # Ignore messages without attachment or with the delete emoji
+            if not message.attachments or '❌' in message.reactions:
+                continue
+            else:
+                self.on_message(message)
+        logging.info(f'All photos in channel: {ctx.channel.name} now captured.')
 
 
     async def sync_command_tree(self, ctx: commands.Context):
@@ -343,7 +380,20 @@ class PhotoBot(commands.Bot):
             await ctx.send('Command tree synced 👌.')
         else:
             await ctx.send('Only the owner of the bot can use this command 😞.')
+            
+            
+    def is_valid_image_type(self, url: str) -> bool:
+        '''
+        Parse a Discord attachment URL to check the image format.
 
+        Args:
+            url (str): A URL of a Discord attachment.
+        
+        Returns:
+            bool: True if it a valid image type
+        '''
+        suffix = Path(urlparse(url).path).suffix
+        return suffix.lower() in self.image_suffixes
 
 
 def add_commands_to_bot(bot: PhotoBot):
@@ -356,8 +406,8 @@ def add_commands_to_bot(bot: PhotoBot):
         bot (PhotoBot): An instance of the PhotoBot class.
     '''
     @bot.hybrid_command(name='album',
-                        description='Name the photo album for this channel ID.',
-                        brief='Start cpaturing uploaded photos in this channel. Also rename the album. Update the users in album.')
+                        description='Capture photos, name the photo album for this channel ID and show the URL.',
+                        brief='Start capturing uploaded photos in this channel, rename the album and update the users in album.')
     async def capture_album(ctx, *, album_name: str=""):
         await bot.capture_album(ctx, album_name)
 
@@ -367,6 +417,12 @@ def add_commands_to_bot(bot: PhotoBot):
     async def stop_capture_album(ctx):
         await bot.stop_capture_album(ctx)
 
+    @bot.hybrid_command(name='add_all',
+                        description='Add all photos in a channel to the album.',
+                        brief='Add all photos to channel.')
+    async def capture_all_photos(ctx):
+        await bot.capture_all_photos(ctx)
+
     @bot.command(name='sync_commands_photobot',
                  hidden=True)
     async def sync_command_tree(ctx):
@@ -375,16 +431,4 @@ def add_commands_to_bot(bot: PhotoBot):
     logging.info('Commands added to PhotoBot.')
 
 
-def parse_url(url: str) -> str:
-    '''
-    Parse a Discord attachment URL to verified format.
 
-    Args:
-        url (str): A URL of a Discord attachment.
-    
-    Returns:
-        str: The parsed URL of a Discord attachment.
-    '''
-    parse = urlparse(url)
-    parsed_url = f'{parse.scheme}://{parse.netloc}{parse.path}'
-    return parsed_url
